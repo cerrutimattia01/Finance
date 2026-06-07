@@ -15,7 +15,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { getFirestore, doc, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const firebaseConfig = {
@@ -30,16 +30,23 @@ const firebaseConfig = {
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db   = getFirestore(app);
+const provider = new GoogleAuthProvider();
 
-// Esponi globalmente per il resto del codice
 window._fbAuth = auth;
 window._fbDb   = db;
 window._fbDoc  = doc;
 window._fbSetDoc = setDoc;
 window._fbGetDoc = getDoc;
-window._fbGoogleProvider = new GoogleAuthProvider();
-window._fbSignInWithPopup = signInWithPopup;
+window._fbProvider = provider;
+window._fbSignInWithRedirect = signInWithRedirect;
 window._fbSignOut = signOut;
+
+// Gestisce il ritorno dal redirect Google
+getRedirectResult(auth).then(result => {
+  // Il login via redirect è gestito da onAuthStateChanged
+}).catch(err => {
+  if (err.code !== 'auth/no-current-user') console.warn('Redirect error:', err);
+});
 
 onAuthStateChanged(auth, async user => {
   if (user) {
@@ -2488,7 +2495,7 @@ if ('serviceWorker' in navigator) {
 
 // ── FIREBASE AUTH ──
 function loginGoogle() {
-  window._fbSignInWithPopup(window._fbAuth, window._fbGoogleProvider).catch(e => alert('Errore login: ' + e.message));
+  window._fbSignInWithRedirect(window._fbAuth, window._fbProvider).catch(e => alert('Errore login: ' + e.message));
 }
 function logoutGoogle() {
   if (!confirm('Vuoi uscire?')) return;
